@@ -26,7 +26,7 @@ void MyGLWidget::paintGL ()
   // Activem l'Array a pintar 
   glBindVertexArray(VAO);
   // Pintem l'escena
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 5);
   // Desactivem el VAO
   glBindVertexArray(0);
 }
@@ -41,11 +41,12 @@ void MyGLWidget::createBuffers ()
 
   // Declaració del objectes
     //TRIANGLE 1
-  glm::vec3 Vertices[4];  // Tres vèrtexs amb X, Y i Z
-  Vertices[0] = glm::vec3(-0.7, 0.7, 0.0);
-  Vertices[1] = glm::vec3(0.7, 0.7, 0.0);
-  Vertices[2] = glm::vec3(-0.7, -0.7, 0.0);
-  Vertices[3] = glm::vec3(0.7, -0.7, 0.0);
+  glm::vec3 Vertices[5];  // Tres vèrtexs amb X, Y i Z
+  Vertices[0] = glm::vec3(0, 0.7, 0.0);
+  Vertices[1] = glm::vec3(-0.7, 0, 0.0);
+  Vertices[2] = glm::vec3(0.7, 0, 0.0);
+  Vertices[3] = glm::vec3(-0.7, -0.7, 0.0);
+  Vertices[4] = glm::vec3(0.7, -0.7, 0.0);
 
   //DIBUIXAR TRIANGLE 1
   // Creació del Vertex Array Object (VAO) que usarem per pintar
