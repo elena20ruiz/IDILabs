@@ -69,7 +69,7 @@ void MyGLWidget::createBuffers ()
 
 
   // Obtenim identificador per a l'atribut “vertex” del vertex shader
-  vec = glGetAttribLocation (program->programId(), "vertex");
+  vec = glGetAttribLocation (program->programId(), "v");
 
   // Activem l'atribut que farem servir per vèrtex	
   glVertexAttribPointer(vec, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -90,7 +90,7 @@ void MyGLWidget::createBuffers ()
 
 
   // Obtenim identificador per a l'atribut “color” del vertex shader
-  color = glGetAttribLocation (program->programId(), "colorx");
+  color = glGetAttribLocation (program->programId(), "c");
 
   // Activem l'atribut que farem servir per vèrtex
   glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -125,7 +125,6 @@ void MyGLWidget::carregaShaders()
   program->addShader(&vs);
   // Linkem el program
   program->link();
-
   // Indiquem que aquest és el program que volem usar
   program->bind();
 
