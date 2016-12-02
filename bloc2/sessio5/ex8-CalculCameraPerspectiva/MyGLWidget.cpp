@@ -46,11 +46,9 @@ void MyGLWidget::paintGL ()
 
 void MyGLWidget::resizeGL (int w, int h)
 {
-
     glViewport(0, 0, w, h);
-
+    CalculRedimensionar();
     projectTransform();
-
 }
 
 void MyGLWidget::keyPressEvent(QKeyEvent* event)
@@ -69,7 +67,7 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event)
     }
     case Qt::Key_R: {
       rotate += M_PI/8;
-      modelTransformRot ();
+      modelTransformHomer();
       break;
 
     }
@@ -85,7 +83,6 @@ void MyGLWidget::initVariables(){
     scale = 1.0f;
     rotate = 0.0f;
     ra = 1.0f;
-    angle = 1.0f;
     znear = 1.8f;
     zfar = 1.0f;
 }
@@ -95,8 +92,8 @@ void MyGLWidget::init_camera(){
     /**CONFIG PROJECCIO **/
 
     FOV = (float)M_PI/2.0f;
-    angle = (float) ((M_PI)/4.0);
     ra = 1.0f;
+    angle = (float)M_PI/4.0f;
     znear = 0.4f;
     zfar = 3.0f;
     //Carreguem la projeccio del model
@@ -120,15 +117,13 @@ void MyGLWidget::modelTransform ()
   // Matriu de transformació de model
   glm::mat4 transform (1.0f);
 
-  glm::vec3 capsa = calcCentreCapsa(maxCapsa,minCapsa);
-
   transform = glm::scale(transform, glm::vec3(scale));
-  transform = transform*glm::translate(transform,capsa);
+  transform = glm::translate(transform,centreCapsa);
 
   glUniformMatrix4fv(transLoc, 1, GL_FALSE, &transform[0][0]);
 }
 
-void MyGLWidget::modelTransformRot()
+void MyGLWidget::modelTransformHomer()
 {
 
   // Matriu de transformació de model
@@ -136,45 +131,75 @@ void MyGLWidget::modelTransformRot()
   glm::vec3 rot(0);
   rot[1] = 1; //Inicialitzo a 1
 
-
-  glm::vec3 capsa = calcCentreCapsa(maxCapsa,minCapsa);
-
   transform = glm::rotate(transform,rotate,rot);
-  transform = transform*glm::scale(transform, glm::vec3(scale));
-  transform = transform*glm::translate(transform,capsa);
+  transform = glm::scale(transform, glm::vec3(scale));
+  transform = glm::translate(transform,centreCapsa);
 
 
   glUniformMatrix4fv(transLoc, 1, GL_FALSE, &transform[0][0]);
 }
 
-void MyGLWidget::projectTransform () {
+void MyGLWidget::CalculRedimensionar() {
 
     ra = float(width())/float(height());
-
-    FOV = CalculFOV(ra,angle);
-
-    // glm::perspective (FOV en radians, ra window, znear, zfar)
-    glm::mat4 Proj = glm::perspective (FOV,ra,znear,zfar);
-    glUniformMatrix4fv (projLoc, 1, GL_FALSE, &Proj[0][0]);
+    if(ra < 1) angle = atan(tan(angle)/ra);
+    FOV = angle*2;
 
 }
+
+void MyGLWidget::projectTransform () {
+
+    //glm::perspective (FOV en radians, ra window, znear, zfar)
+    glm::mat4 Proj = glm::perspective (FOV,ra,znear,zfar);
+    glUniformMatrix4fv (projLoc, 1, GL_FALSE, &Proj[0][0]);
+}
+
+float MyGLWidget::distanciaOrigen(glm::vec3 ini, glm::vec3 fi)
+{
+    float x=fi.x-ini.x;
+    float y=fi.y-ini.y;
+    float z=fi.z-ini.z;
+    float d = sqrt(x*x+y*y+z*z);
+    std::cout << "sqrt("<<x<<"²+"<<y<<"²+"<<z<<")="<<d<<std::endl;
+    return d;
+}
+
 
 void MyGLWidget::viewTransform ()
 {
-  // Matriu de transformació de model
-  // glm::lookAt (OBS, VRP, UP) : Perspective
 
-    glm::mat4 View = glm::lookAt (OBS,VRP,UP);
+    //glm::vec3 centreCapsa = calcCentreCapsa(maxCapsa,minCapsa);
+
+    UP = glm::vec3(0,1,0);
+    OBS = glm::vec3(0,radi+1.5,0);
+    VRP = glm::vec3(0,0,0);
+
+
+    float d = distanciaOrigen(centreCapsa,maxCapsa);
+
+    glm::mat4 View = glm::translate(glm::mat4(1.0f),glm::vec3(0.,0.,-d+1.5));
+    View = glm::translate(View,centreCapsa);
+
+    //Matriu de transformació de model
+    //glm::lookAt (OBS, VRP, UP):Perspective
+    //OBS = glm::vec3(0.,0.,((centreCapsa.z)/2)+1.5);
+   // VRP = glm::vec3 (0.,0.,0.);
+    //UP = glm::vec3 (0.,1.,0.);
+   // glm::mat4 View = glm::lookAt (OBS,VRP,UP);
+
     glUniformMatrix4fv (viewLoc, 1, GL_FALSE, &View[0][0]);
 }
-
 
 //*********PINTAR OBJECTES**********//
 void MyGLWidget::paintModel(const Model &model, const GLuint &VAO) {
 
-    //1. Transformacio del model
-    modelTransformRot();
+    //Calculs de l'objecte:
+    calculCapsaContenidora(model,maxCapsa,minCapsa);
+    radi = calculRadiCapsa(maxCapsa,minCapsa);
+    centreCapsa = calculCentreCapsa(maxCapsa,minCapsa);
 
+    //1. Transformacio del model
+    modelTransformHomer();
     //2. Pintar Model
     // Activem el VAO
     glBindVertexArray (VAO);
@@ -182,7 +207,6 @@ void MyGLWidget::paintModel(const Model &model, const GLuint &VAO) {
     glDrawArrays (GL_TRIANGLES, 0, model.faces().size () * 3);
     // Descativem
     glBindVertexArray (0);
-
 }
 
 void MyGLWidget::paintTerra(const GLuint &VAO) {
@@ -202,8 +226,22 @@ void MyGLWidget::paintTerra(const GLuint &VAO) {
 
 //*********************CALCULS DELS MODELS****************************************//
 
-void MyGLWidget::calcCapsaContenidora(const Model &model,glm::vec3& min,glm::vec3& max,
-                                      float &radi)
+float MyGLWidget::calculRadiCapsa(const glm::vec3 &max, const glm::vec3 &min) {
+    float radi = 0;
+
+    float altY = max.y-min.y;
+    float altX = max.x-min.y;
+    float altZ = max.z-min.z;
+
+    if(altX >= altZ) radi = altX;
+    else radi = altZ;
+
+    if(radi <= altY) radi = altY;
+
+    return radi;
+}
+
+void MyGLWidget::calculCapsaContenidora(const Model &model,glm::vec3& max,glm::vec3& min)
 {
     //calcul max i min
 
@@ -225,20 +263,10 @@ void MyGLWidget::calcCapsaContenidora(const Model &model,glm::vec3& min,glm::vec
         if(z<min.z) min.z = z;
         else if (z>max.z) max.z = z;
     }
-
-    //Calcul radi
-
-    float altY = max.y-min.y;
-    float altX = max.x-min.y;
-    float altZ = max.z-min.z;
-
-    if(altX >= altZ) radi = altX;
-    else radi = altZ;
-
-    if(radi <= altY) radi = altY;
 }
 
-glm::vec3 MyGLWidget::calcCentreCapsa(const glm::vec3 &max, const glm::vec3 &min) {
+
+glm::vec3 MyGLWidget::calculCentreCapsa(const glm::vec3 &max, const glm::vec3 &min) {
 
     float cxModel = -(max.x+min.x)/2;
     float cyModel = -(max.y+min.y)/2;
@@ -247,18 +275,9 @@ glm::vec3 MyGLWidget::calcCentreCapsa(const glm::vec3 &max, const glm::vec3 &min
     return glm::vec3(cxModel, cyModel, czModel);
 }
 
-float MyGLWidget::CalculFOV(float ra, float ang)
-{
-    if(ra>=1)return ang*2;
-    else {
-        ang = atan(tan(angle)/ra);
-        angle = ang;
-        return ang*2;
-    }
-}
 
 
-//*******CARREGA DE INFORMACIO***********//
+//*********************CARREGA DE INFO PROGRAMA*********************************//
 void MyGLWidget::createBuffers ()
 {
 
@@ -267,7 +286,6 @@ void MyGLWidget::createBuffers ()
   //*********************************************************************************//
 
    m.load ("./models/HomerProves.obj");
-   calcCapsaContenidora(m,maxCapsa,minCapsa,radi);
 
   // 1. Creació del Vertex Array Object per pintar
   glGenVertexArrays(1, &VAO_Homer);
@@ -376,7 +394,5 @@ void MyGLWidget::carregaShaders()
   viewLoc = glGetUniformLocation(program->programId(), "view");
 
   glEnable(GL_DEPTH_TEST);
-
-
 }
 

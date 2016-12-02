@@ -5,6 +5,12 @@
 MyGLWidget::MyGLWidget (QWidget* parent) : QOpenGLWidget(parent)
 {
   setFocusPolicy(Qt::ClickFocus);  // per rebre events de teclat
+  scale = 1.0f;
+  rotate = 0.0f;
+  ra = 1.0f;
+  angle = 1.0f;
+  znear = 1.0f;
+  zfar = 1.8f;
 }
 
 MyGLWidget::~MyGLWidget ()
@@ -15,34 +21,128 @@ MyGLWidget::~MyGLWidget ()
 
 void MyGLWidget::initializeGL ()
 {
-  initVariables();
   // Cal inicialitzar l'ús de les funcions d'OpenGL
   initializeOpenGLFunctions();
 
   glClearColor(0.5, 0.7, 1.0, 1.0); // defineix color de fons (d'esborrat)
-
   carregaShaders();
   createBuffers();
 }
+/*
+Un cop tenim tota la cp, FOV, ra, znear i zfar) en variables que s’inicialitzen en un m`etode ini camera (). Aquest
+m`etode a m ́es d’inicialitzar aquestes variables far`a les crides necess`aries per a inicialitzar les
+matrius (projectTransform () i viewTransform ()).*/
 
+void MyGLWidget::init_camera(){
 
-//**************F.PREFEFINIDES**************//
+    /**CONFIG PROJECCIO **/
+
+    FOV = (float)M_PI/2.0f;
+    ra = 1.0f;
+    znear = 0.4f;
+    zfar = 3.0f;
+    //Carreguem la projeccio del model
+    projectTransform();
+
+    /**CONFIG VIEW**/
+
+    OBS = glm::vec3(0,0,1);
+    VRP = glm::vec3(0,0,0);
+    UP = glm::vec3(0,1,0);
+
+    //Carreguem la view del model
+    viewTransform();
+}
+
 
 void MyGLWidget::paintGL ()
 {
 
-  // 1. Esborrem el frame-buffer (PER DEFECTE)
+  // Esborrem el frame-buffer (PER DEFECTE)
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // 2. Project+View
+  //************OBJECTE 1 HOMER****************//
+
+  // 1 .Project+View
   init_camera();
 
-  //**OBJECTE 1 HOMER********//
-  paintModel(m,VAO_Homer);
-  //**OBJECTE 2 TERRA********//
-  paintTerra(VAO_Terra);
+  // 2. Transformacio del model a pintar
+  modelTransformRot();
+
+  // 3. Pintem objectes
+  // Activem el VAO per a pintar homer
+  glBindVertexArray (VAO_Homer);
+
+  //View
+  glDrawArrays (GL_TRIANGLES, 0, m.faces().size()*3);
+
+  //************OBJECTE 2 TERRA***************//
+
+
+  //Tranformacio del model  (nomes es torna a aplicar el model
+  //                        transform que es l'unic que volem
+  //                        diferent)
+  modelTransform ();
+
+  glBindVertexArray (VAO_Terra);
+  // pintem
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  glBindVertexArray (0);
+}
+
+
+//********MATRIUS TRANSFORMACIONS*************//
+
+void MyGLWidget::modelTransform ()
+{
+  // Matriu de transformació de model
+  glm::mat4 transform (1.0f);
+  glm::vec3 rot(0);
+  rot[1] = 1; //Inicialitzo a 1
+
+  transform = glm::scale(transform, glm::vec3(scale));
+
+  glUniformMatrix4fv(transLoc, 1, GL_FALSE, &transform[0][0]);
+}
+
+void MyGLWidget::modelTransformRot ()
+{
+  // Matriu de transformació de model
+  glm::mat4 transform (1.0f);
+  glm::vec3 rot(0);
+  rot[1] = 1; //Inicialitzo a 1
+
+  transform = glm::rotate(transform,rotate,rot);
+  transform = transform*glm::scale(transform, glm::vec3(scale));
+
+
+  glUniformMatrix4fv(transLoc, 1, GL_FALSE, &transform[0][0]);
+}
+
+void MyGLWidget::projectTransform () {
+
+    ra = float(width())/float(height());
+
+    if(ra < 1) { angle = atan(tan(float((M_PI)/4.0))/ra);}
+    FOV = 2*angle;
+
+    // glm::perspective (FOV en radians, ra window, znear, zfar)
+    glm::mat4 Proj = glm::perspective (FOV,ra,znear,zfar);
+    glUniformMatrix4fv (projLoc, 1, GL_FALSE, &Proj[0][0]);
 
 }
+
+void MyGLWidget::viewTransform ()
+{
+  // Matriu de transformació de model
+  // glm::lookAt (OBS, VRP, UP)
+
+    glm::mat4 View = glm::lookAt (OBS,VRP,UP);
+    glUniformMatrix4fv (viewLoc, 1, GL_FALSE, &View[0][0]);
+}
+
+
 
 void MyGLWidget::resizeGL (int w, int h)
 {
@@ -68,7 +168,7 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event)
       break;
     }
     case Qt::Key_R: {
-      rotate += M_PI/8;
+      rotate += M_PI/4;
       modelTransformRot ();
       break;
 
@@ -79,186 +179,8 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event)
 }
 
 
-//***********INICIALITZACIONS*****************//
-
-void MyGLWidget::initVariables(){
-    scale = 1.0f;
-    rotate = 0.0f;
-    ra = 1.0f;
-    angle = 1.0f;
-    znear = 1.8f;
-    zfar = 1.0f;
-}
-
-void MyGLWidget::init_camera(){
-
-    /**CONFIG PROJECCIO **/
-
-    FOV = (float)M_PI/2.0f;
-    angle = (float) ((M_PI)/4.0);
-    ra = 1.0f;
-    znear = 0.4f;
-    zfar = 3.0f;
-    //Carreguem la projeccio del model
-    projectTransform();
-
-    /**CONFIG VIEW**/
-
-    OBS = glm::vec3(0,0,1);
-    VRP = glm::vec3(0,0,0);
-    UP = glm::vec3(0,1,0);
-
-    //Carreguem la view del model
-    viewTransform();
-}
 
 
-//********MATRIUS TRANSFORMACIONS***********//
-
-void MyGLWidget::modelTransform ()
-{
-  // Matriu de transformació de model
-  glm::mat4 transform (1.0f);
-
-  glm::vec3 capsa = calcCentreCapsa(maxCapsa,minCapsa);
-
-  transform = glm::scale(transform, glm::vec3(scale));
-  transform = transform*glm::translate(transform,capsa);
-
-  glUniformMatrix4fv(transLoc, 1, GL_FALSE, &transform[0][0]);
-}
-
-void MyGLWidget::modelTransformRot()
-{
-
-  // Matriu de transformació de model
-  glm::mat4 transform (1.0f);
-  glm::vec3 rot(0);
-  rot[1] = 1; //Inicialitzo a 1
-
-
-  glm::vec3 capsa = calcCentreCapsa(maxCapsa,minCapsa);
-
-  transform = glm::rotate(transform,rotate,rot);
-  transform = transform*glm::scale(transform, glm::vec3(scale));
-  transform = transform*glm::translate(transform,capsa);
-
-
-  glUniformMatrix4fv(transLoc, 1, GL_FALSE, &transform[0][0]);
-}
-
-void MyGLWidget::projectTransform () {
-
-    ra = float(width())/float(height());
-
-    FOV = CalculFOV(ra,angle);
-
-    // glm::perspective (FOV en radians, ra window, znear, zfar)
-    glm::mat4 Proj = glm::perspective (FOV,ra,znear,zfar);
-    glUniformMatrix4fv (projLoc, 1, GL_FALSE, &Proj[0][0]);
-
-}
-
-void MyGLWidget::viewTransform ()
-{
-  // Matriu de transformació de model
-  // glm::lookAt (OBS, VRP, UP) : Perspective
-
-    glm::mat4 View = glm::lookAt (OBS,VRP,UP);
-    glUniformMatrix4fv (viewLoc, 1, GL_FALSE, &View[0][0]);
-}
-
-
-//*********PINTAR OBJECTES**********//
-void MyGLWidget::paintModel(const Model &model, const GLuint &VAO) {
-
-    //1. Transformacio del model
-    modelTransformRot();
-
-    //2. Pintar Model
-    // Activem el VAO
-    glBindVertexArray (VAO);
-    // Pintem
-    glDrawArrays (GL_TRIANGLES, 0, model.faces().size () * 3);
-    // Descativem
-    glBindVertexArray (0);
-
-}
-
-void MyGLWidget::paintTerra(const GLuint &VAO) {
-    //Tranformacio del model  (nomes es torna a aplicar el model
-    //                        transform que es l'unic que volem
-    //                        diferent)
-    modelTransform ();
-
-    glBindVertexArray (VAO);
-    // pintem
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    glBindVertexArray (0);
-}
-
-
-
-//*********************CALCULS DELS MODELS****************************************//
-
-void MyGLWidget::calcCapsaContenidora(const Model &model,glm::vec3& min,glm::vec3& max,
-                                      float &radi)
-{
-    //calcul max i min
-
-    min.x = max.x = model.vertices()[0];
-    min.y = max.y = model.vertices()[1];
-    min.z = max.z = model.vertices()[2];
-
-    for(unsigned int i = 3;i<model.vertices().size();i+=3) {
-        double x = model.vertices()[i];
-        double y = model.vertices()[i+1];
-        double z = model.vertices()[i+2];
-
-        if(x<min.x) min.x = x;
-        else if (x>max.x) max.x = x;
-
-        if(y<min.y) min.y = y;
-        else if (y>max.y) max.y = y;
-
-        if(z<min.z) min.z = z;
-        else if (z>max.z) max.z = z;
-    }
-
-    //Calcul radi
-
-    float altY = max.y-min.y;
-    float altX = max.x-min.y;
-    float altZ = max.z-min.z;
-
-    if(altX >= altZ) radi = altX;
-    else radi = altZ;
-
-    if(radi <= altY) radi = altY;
-}
-
-glm::vec3 MyGLWidget::calcCentreCapsa(const glm::vec3 &max, const glm::vec3 &min) {
-
-    float cxModel = -(max.x+min.x)/2;
-    float cyModel = -(max.y+min.y)/2;
-    float czModel = -(max.z+min.z)/2;
-
-    return glm::vec3(cxModel, cyModel, czModel);
-}
-
-float MyGLWidget::CalculFOV(float ra, float ang)
-{
-    if(ra>=1)return ang*2;
-    else {
-        ang = atan(tan(angle)/ra);
-        angle = ang;
-        return ang*2;
-    }
-}
-
-
-//*******CARREGA DE INFORMACIO***********//
 void MyGLWidget::createBuffers ()
 {
 
@@ -267,7 +189,6 @@ void MyGLWidget::createBuffers ()
   //*********************************************************************************//
 
    m.load ("./models/HomerProves.obj");
-   calcCapsaContenidora(m,maxCapsa,minCapsa,radi);
 
   // 1. Creació del Vertex Array Object per pintar
   glGenVertexArrays(1, &VAO_Homer);

@@ -31,16 +31,23 @@ class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
     void createBuffers ();
     void carregaShaders ();
     void modelTransform ();
-    void modelTransformRot ();
+    void modelTransformHomer();
+
     void projectTransform();
     void viewTransform();
+
     void init_camera();
+    void CalculRedimensionar();
     void initVariables();
+
     void paintModel(const Model &model, const GLuint &VAO);
     void paintTerra(const GLuint &VAO);
-    void calcCapsaContenidora(const Model &model,glm::vec3& min,glm::vec3& max, float &radi);
-    glm::vec3 calcCentreCapsa(const glm::vec3 &max, const glm::vec3 &min);
-    float CalculFOV(float ra, float ang);
+
+    void calculCapsaContenidora(const Model &model,glm::vec3& max,glm::vec3& min);
+    float calculRadiCapsa(const glm::vec3& max, const glm::vec3& min);
+    glm::vec3 calculCentreCapsa(const glm::vec3 &max, const glm::vec3 &min);
+
+    float distanciaOrigen(glm::vec3 ini, glm::vec3 fi);
 
     //DECLARACIO UNIC OBJECTE
     Model m; // un únic model

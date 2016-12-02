@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 3.2.1, 2016-12-02T14:00:05. -->
+<!-- Written by QtCreator 3.2.1, 2016-11-29T17:13:07. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -176,8 +176,8 @@
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Bloc2_Exemple</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Bloc2_Exemple2</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/dades/elena.ruiz/linux/IDILabs/bloc2/sessio5/ex7-CapsaContenidora/Bloc2_Exemple.pro</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/dades/elena.ruiz/linux/IDILabs/bloc2/sessio5/ex5-AfegirTerra/Bloc2_Exemple.pro</value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.CommandLineArguments"></value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.ProFile">Bloc2_Exemple.pro</value>
     <value type="bool" key="Qt4ProjectManager.Qt4RunConfiguration.UseDyldImageSuffix">false</value>
