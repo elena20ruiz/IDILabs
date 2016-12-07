@@ -42,6 +42,7 @@ class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
     void calcCapsaContenidora(const Model &model,glm::vec3& max,glm::vec3& min);
     float calculRadi( const glm::vec3& max, const glm::vec3& min);
     glm::vec3 calcCentreCapsa(const glm::vec3 &max, const glm::vec3 &min);
+    float calculDistancia(glm::vec3 ini, glm::vec3 fi);
 
     //DECLARACIO UNIC OBJECTE
     Model m; // un únic model

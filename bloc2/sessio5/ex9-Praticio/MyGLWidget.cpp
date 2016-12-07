@@ -51,6 +51,7 @@ void MyGLWidget::resizeGL (int w, int h)
 {
 
     glViewport(0, 0, w, h);
+    ra =  float(width())/float(height());
     projectTransform();
 }
 
@@ -65,7 +66,7 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event)
       break;
     }
     case Qt::Key_D: { // escalar a més petit
-      //scale -= 0.05;
+      scale -= 0.05;
       modelTransform();
       break;
     }
@@ -99,8 +100,8 @@ void MyGLWidget::init_camera(){
     FOV = (float)M_PI/2.0f;
     angle = (float) ((M_PI)/4.0);
     ra = 1.0f;
-    znear = minCapsa.z;
-    zfar = maxCapsa.z;
+    znear = 1.5;
+    zfar = (maxCapsa.z-minCapsa.z)+1.5;
     //Carreguem la projeccio del model
     projectTransform();
 
@@ -151,7 +152,14 @@ void MyGLWidget::modelTransformRot()
 }
 
 void MyGLWidget::projectTransform () {
-    resizeAngle();
+
+    FOV = 2*atan((maxCapsa.y-minCapsa.y/3));
+
+    resizeAngle(); //Per quan es modifica el ra
+
+    znear = 1.5;
+    zfar = 1.5 + (maxCapsa.z - minCapsa.z);
+
     glm::mat4 Proj = glm::perspective (FOV,ra,znear,zfar);
     glUniformMatrix4fv (projLoc, 1, GL_FALSE, &Proj[0][0]);
 
@@ -160,9 +168,19 @@ void MyGLWidget::projectTransform () {
 void MyGLWidget::viewTransform ()
 {
   // Matriu de transformació de model
-  // glm::lookAt (OBS, VRP, UP) : Perspective
-    glm::mat4 view = glm::translate(glm::mat4(1.0f),glm::vec3(0.,0.,-radi*2+1.5));
-    View = glm::translate(view,-centreCaixa);
+     // glm::lookAt (OBS, VRP, UP) : Perspective
+
+    radi = calculRadi(maxCapsa,minCapsa);
+    centreCapsa = calcCentreCapsa(maxCapsa,minCapsa);
+
+    double distancia = calculDistancia(centreCapsa,maxCapsa);
+
+    glm::mat4 View = glm::mat4(1.0f);
+    View = glm::translate(View,glm::vec3(0.,0.,-distancia+1.5));
+    View = glm::rotate(View, float(M_PI/2.0),glm::vec3(1,0,0));
+    View = glm::rotate(View, float(-M_PI/2.0),glm::vec3(0,1,0));
+    View = glm::translate(View, glm::vec3(-VRP.x,-VRP.y,-VRP.z));
+
     glUniformMatrix4fv (viewLoc, 1, GL_FALSE, &View[0][0]);
 }
 
@@ -199,11 +217,17 @@ void MyGLWidget::paintTerra(const GLuint &VAO) {
 
 
 //*********************CALCULS DELS MODELS****************************************//
+float MyGLWidget::calculDistancia(glm::vec3 ini, glm::vec3 fi) {
+    float x = fi.x- ini.x;
+    float y = fi.y- ini.y;
+    float z = fi.z- ini.z;
+    float d = sqrt(x*x+y*y+z*z);
+    std::cout << "sqrt("<<x<<"²+"<<y<<"²+"<<z<<")="<<d<<std::endl;
+    return d;
+}
 
-
+//Es modifica nomes si s'ha modificat ra
 void MyGLWidget::resizeAngle(){
-
-    ra =  float(width())/float(height());
 
     if(ra>=1) FOV = angle*2;
     else {
