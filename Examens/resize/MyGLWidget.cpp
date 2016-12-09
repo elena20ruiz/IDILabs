@@ -31,11 +31,17 @@ void MyGLWidget::initializeGL ()
   viewTransform ();
 }
 
+void MyGLWidget::init_camera(){
+
+    FOV = (float)M_PI/3.0f;
+    ra = 1.0f;
+}
+
 void MyGLWidget::paintGL () 
 {
   // Esborrem el frame-buffer i el depth-buffer
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  init_camera();
   // Activem el VAO per a pintar el terra 
   glBindVertexArray (VAO_Terra);
 
@@ -52,21 +58,14 @@ void MyGLWidget::paintGL ()
   // Pintem l'escena
   glDrawArrays(GL_TRIANGLES, 0, patr.faces().size()*3);
   
-  //------------------------------NOU CODI
-
-  glBindVertexArray(VAO_Patr);
-
-  modelTransformPatricio2 ();
-
-  glDrawArrays(GL_TRIANGLES, 0, patr.faces().size()*3);
-
-  //-----------------------------------------------------
   glBindVertexArray(0);
 }
 
 void MyGLWidget::resizeGL (int w, int h) 
 {
+  projectTransform();
   glViewport(0, 0, w, h);
+
 }
 
 void MyGLWidget::createBuffers ()
@@ -148,6 +147,39 @@ void MyGLWidget::createBuffers ()
 	glm::vec3(2.0, -1.0, -2.0),
 	glm::vec3(2.0, 1.0, -2.0)
   }; 
+
+  //________________________________________________________________
+  //___________________CALCUL MAX I MIN TERRA_______________________
+
+  maxTerra.x = minTerra.x = posterra[0].x;
+  maxTerra.y = minTerra.y = posterra[0].y;
+  maxTerra.z = minTerra.z = posterra[0].z;
+
+  for (unsigned int i = 0; i < 12; i+=1)
+  {
+      if (posterra[i].x < minTerra.x)
+        minTerra.x = posterra[i].x;
+      if (posterra[i].x > maxTerra.x)
+        maxTerra.x = posterra[i].x;
+      if (posterra[i].y < minTerra.y)
+        minTerra.y = posterra[i].y;
+      if (posterra[i].y > maxTerra.y)
+        maxTerra.y = posterra[i].y;
+      if (posterra[i].z < minTerra.z)
+        minTerra.z = posterra[i].z;
+      if (posterra[i].z > maxTerra.z)
+        maxTerra.z = posterra[i].z;
+  }
+  centreTerra.x = (minTerra.x+maxTerra.x)/2.0;
+  centreTerra.y = (minTerra.y+maxTerra.y)/2.0;
+  centreTerra.z = (minTerra.z+maxTerra.z)/2.0;
+
+   //________________________________________________________
+   //_______________FI CALCUL________________________________
+
+
+
+
 
   // VBO amb la normal de cada vèrtex
   glm::vec3 norm1 (0,1,0);
@@ -275,23 +307,7 @@ void MyGLWidget::modelTransformPatricio ()
   glm::mat4 TG(1.f);  // Matriu de transformació
   TG = glm::scale(TG, glm::vec3(escala, escala, escala));
   TG = glm::translate(TG, -centrePatr);
-
-  glUniformMatrix4fv (transLoc, 1, GL_FALSE, &TG[0][0]);
-}
-
-void MyGLWidget::modelTransformPatricio2 ()
-{
-  glm::mat4 TG(1.f);  // Matriu de transformació
-  //TG = glm::translate(TG,glm::vec3())
-  glm::vec3 rot(0);
-  rot[2] = 1; //Inicialitzo a 1
-
-
-  TG = glm::translate(TG,glm::vec3(0.0,centrePatr.y+(centrePatr.y/2),0.0));
-  TG = glm::rotate(TG,((float)M_PI/180),rot);
-  TG = glm::scale(TG, glm::vec3(escala, escala, escala));
-  TG = glm::translate(TG, -centrePatr);
-
+  
   glUniformMatrix4fv (transLoc, 1, GL_FALSE, &TG[0][0]);
 }
 
@@ -303,9 +319,18 @@ void MyGLWidget::modelTransformTerra ()
 
 void MyGLWidget::projectTransform ()
 {
+  //------------------------Per resize
+  ra = float(width())/float(height());
+
+  if (ra < 1) FOV = 2*atan(tan(((float) M_PI/3.0f))/ra);
+  else FOV = ((float) M_PI/3.0f);
+
+  //-----------------------
+
+
   glm::mat4 Proj;  // Matriu de projecció
   if (perspectiva)
-    Proj = glm::perspective(float(M_PI/3.0), 1.0f, radiEsc, 3.0f*radiEsc);
+    Proj = glm::perspective(FOV, 1.0f, radiEsc, 3.0f*radiEsc);
   else
     Proj = glm::ortho(-radiEsc, radiEsc, -radiEsc, radiEsc, radiEsc, 3.0f*radiEsc);
 
@@ -324,55 +349,61 @@ void MyGLWidget::viewTransform ()
 void MyGLWidget::calculaCapsaModel ()
 {
   // Càlcul capsa contenidora i valors transformacions inicials
-  float minx, miny, minz, maxx, maxy, maxz;
-  minx = maxx = patr.vertices()[0];
-  miny = maxy = patr.vertices()[1];
-  minz = maxz = patr.vertices()[2];
+  minCapsa.x = maxCapsa.x = patr.vertices()[0];
+  minCapsa.y  = maxCapsa.y= patr.vertices()[1];
+  minCapsa.z  = maxCapsa.z = patr.vertices()[2];
   for (unsigned int i = 3; i < patr.vertices().size(); i+=3)
   {
-    if (patr.vertices()[i+0] < minx)
-      minx = patr.vertices()[i+0];
-    if (patr.vertices()[i+0] > maxx)
-      maxx = patr.vertices()[i+0];
-    if (patr.vertices()[i+1] < miny)
-      miny = patr.vertices()[i+1];
-    if (patr.vertices()[i+1] > maxy)
-      maxy = patr.vertices()[i+1];
-    if (patr.vertices()[i+2] < minz)
-      minz = patr.vertices()[i+2];
-    if (patr.vertices()[i+2] > maxz)
-      maxz = patr.vertices()[i+2];
+    if (patr.vertices()[i+0] < minCapsa.x)
+      minCapsa.x = patr.vertices()[i+0];
+    if (patr.vertices()[i+0] > maxCapsa.x)
+      maxCapsa.x = patr.vertices()[i+0];
+    if (patr.vertices()[i+1] < minCapsa.y)
+      minCapsa.y = patr.vertices()[i+1];
+    if (patr.vertices()[i+1] > maxCapsa.y)
+      maxCapsa.y = patr.vertices()[i+1];
+    if (patr.vertices()[i+2] < minCapsa.z)
+      minCapsa.z = patr.vertices()[i+2];
+    if (patr.vertices()[i+2] > maxCapsa.z)
+      maxCapsa.z = patr.vertices()[i+2];
   }
-  escala = 2.0/(maxy-miny);
-  centrePatr[0] = (minx+maxx)/2.0; centrePatr[1] = (miny+maxy)/2.0; centrePatr[2] = (minz+maxz)/2.0;
+  escala = 2.0/(maxCapsa.y - minCapsa.y);
+  centrePatr[0] = (minCapsa.x+maxCapsa.x)/2.0;
+  centrePatr[1] = (minCapsa.y+maxCapsa.y)/2.0;
+  centrePatr[2] = (minCapsa.z+maxCapsa.z)/2.0;
 }
 
-void MyGLWidget::calculaCapsaModel2 ()
+//*********************************************************//
+//**************FUNCIONS IMPORTANTS************************//
+
+
+float MyGLWidget::distanciaEntre2Punts(glm::vec3 orig, glm::vec3 dest)
 {
-  // Càlcul capsa contenidora i valors transformacions inicials
-  float minx, miny, minz, maxx, maxy, maxz;
-  minx = maxx = patr2.vertices()[0];
-  miny = maxy = patr2.vertices()[1];
-  minz = maxz = patr2.vertices()[2];
-  for (unsigned int i = 3; i < patr.vertices().size(); i+=3)
-  {
-    if (patr2.vertices()[i+0] < minx)
-      minx = patr.vertices()[i+0];
-    if (patr2.vertices()[i+0] > maxx)
-      maxx = patr2.vertices()[i+0];
-    if (patr2.vertices()[i+1] < miny)
-      miny = patr2.vertices()[i+1];
-    if (patr2.vertices()[i+1] > maxy)
-      maxy = patr2.vertices()[i+1];
-    if (patr.vertices()[i+2] < minz)
-      minz = patr2.vertices()[i+2];
-    if (patr2.vertices()[i+2] > maxz)
-      maxz = patr2.vertices()[i+2];
-  }
-
-  escala2 = escala;
-  centrePatr2[0] = (minx+maxx)/2.0; centrePatr2[1] = (miny+maxy)/2.0; centrePatr2[2] = (minz+maxz)/2.0;
+    double x=dest.x-orig.x;
+    double y=dest.y-orig.y;
+    double z=dest.z-orig.z;
+    double d = sqrt(x*x+y*y+z*z);
+   // std::cout << "sqrt("<<x<<"²+"<<y<<"²+"<<z<<")="<<d<<std::endl;
+    return d;
 }
+
+void MyGLWidget::distanciaMaximaEscena(){
+
+    float dist1 = (maxCapsa.x-minCapsa.x);
+    float dist2 = (maxTerra.y-minTerra.y);
+    float dist3 = (maxTerra.z-minTerra.z);
+
+    radiEsc = dist1;
+    if (radiEsc < dist2) radiEsc = dist2;
+    if (radiEsc < dist3) radiEsc = dist3;
+
+    radiEsc = radiEsc/2;
+}
+
+
+//********************************************************//
+//********************EVENTS******************************//
+
 
 void MyGLWidget::keyPressEvent(QKeyEvent* event) 
 {
@@ -413,7 +444,6 @@ void MyGLWidget::mouseMoveEvent(QMouseEvent *e)
   {
     // Fem la rotació
     angleY += (e->x() - xClick) * M_PI / 180.0;
-
     viewTransform ();
   }
 
@@ -423,10 +453,4 @@ void MyGLWidget::mouseMoveEvent(QMouseEvent *e)
   update ();
 }
 
-void MyGLWidget::persp() {
-    makeCurrent();
-    perspectiva = !perspectiva;
-    projectTransform();
-    update();
-}
 

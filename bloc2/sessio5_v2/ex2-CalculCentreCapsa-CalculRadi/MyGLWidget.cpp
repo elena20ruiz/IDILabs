@@ -178,12 +178,11 @@ void MyGLWidget::viewTransform ()
 
 void MyGLWidget::resizeFOV(){
 
-    ra = float(width())/float(height());
-
-    if(ra>=1) FOV = angle*2;
+    if(ra>=1)return initialFOV;
     else {
-        angle = atan(tan(angle)/ra);
-        FOV = angle*2;
+        double alpha = initialFOV/2;
+        double newAlpha = atan(tan(alpha)/ra);
+        return newAlpha*2;
     }
 }
 

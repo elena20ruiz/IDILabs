@@ -17,9 +17,7 @@ class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
   public:
     MyGLWidget (QWidget *parent=0);
     ~MyGLWidget ();
-public slots:
-  void persp();
-  
+
   protected:
     // initializeGL - Aqui incluim les inicialitzacions del contexte grafic.
     virtual void initializeGL ( );
@@ -41,29 +39,46 @@ public slots:
     void carregaShaders ();
     void projectTransform ();
     void viewTransform ();
+
     void modelTransformTerra ();
     void modelTransformPatricio ();
     void modelTransformPatricio2 ();
+
     void calculaCapsaModel ();
-    void calculaCapsaModel2 ();
+
+    //FUNCIONS IMPORTANTS-----------------------------
+
+    void init_camera();
+    float distanciaEntre2Punts(glm::vec3 orig, glm::vec3 dest);
+    void distanciaMaximaEscena();
+
 
     // VAO i VBO names
     GLuint VAO_Patr, VBO_PatrPos, VBO_PatrNorm, VBO_PatrMatamb, VBO_PatrMatdiff, VBO_PatrMatspec, VBO_PatrMatshin;
     GLuint VAO_Terra, VBO_TerraPos, VBO_TerraNorm, VBO_TerraMatamb, VBO_TerraMatdiff, VBO_TerraMatspec, VBO_TerraMatshin;
-   // Program
+    // Program
     QOpenGLShaderProgram *program;
     // uniform locations
     GLuint transLoc, projLoc, viewLoc;
     // attribute locations
     GLuint vertexLoc, normalLoc, matambLoc, matdiffLoc, matspecLoc, matshinLoc;
 
+    //SOBRE ESCENA:
     // model
-    Model patr,patr2;
+    Model patr;
+    //MAXIMS I MINIMS
+    glm::vec3 maxCapsa,minCapsa,maxTerra,minTerra;
     // paràmetres calculats a partir de la capsa contenidora del model
-    glm::vec3 centrePatr,centrePatr2;
-    float escala,escala2;
+    glm::vec3 centrePatr,centreTerra;
+    float escala;
     // radi de l'escena
     float radiEsc;
+
+
+    //SOBRE CAMARA
+    float FOV,ra,alphaIni;
+
+
 
     typedef  enum {NONE, ROTATE} InteractiveAction;
     InteractiveAction DoingInteractive;
