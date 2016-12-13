@@ -76,14 +76,17 @@ class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 
 
     //SOBRE CAMARA
-    float FOV,ra,alphaIni;
+    float FOV,ra;
+
+    //ROTACIONS
+    float rx, ry;
 
 
 
     typedef  enum {NONE, ROTATE} InteractiveAction;
     InteractiveAction DoingInteractive;
     int xClick, yClick;
-    float angleY;
+    float angleY,angleX;
     bool perspectiva;
 };
 
